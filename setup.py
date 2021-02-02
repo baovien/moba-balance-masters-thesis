@@ -7,5 +7,5 @@ setuptools.setup(
     author_email="baovienngo@gmail.com",
     description="A tool for scraping dota 2 matches for master thesis",
     packages=["d2scraper"],
-    install_requires=['requests', "python-dotenv"]
+    install_requires=['requests', "python-dotenv", "ujson"]
 )

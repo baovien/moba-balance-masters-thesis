@@ -4,6 +4,7 @@ https://wiki.teamfortress.com/wiki/WebAPI#Dota_2
 https://github.com/Arcana/node-dota2
 https://api.opendota.com/api/matches/5786545933
 https://github.com/kronusme/dota2-api
+https://www.datdota.com/matches?tier=professional
 
 Fetch matches for each hero
 Have a record on matchid
