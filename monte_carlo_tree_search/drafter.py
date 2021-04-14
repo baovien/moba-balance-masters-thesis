@@ -19,6 +19,11 @@ corrresponds to this tuple:
 (False, None, True, False, True, None, True, None, None)
 """
 
+import json
+import joblib
+import numpy as np
+
+from functools import lru_cache
 from collections import namedtuple
 from random import choice
 from monte_carlo_tree_search.mcts import MCTS, Node
@@ -67,15 +72,12 @@ class Draft(_TTTB, Node):
         return Draft(tup, turn, winner, is_terminal)
 
     def to_pretty_string(draft):
-        to_char = lambda v: ("X" if v is True else ("O" if v is False else " "))
-        rows = [
-            [to_char(draft.tup[3 * row + col]) for col in range(3)] for row in range(3)
-        ]
-        return (
-                "\n  1 2 3\n"
-                + "\n".join(str(i + 1) + " " + " ".join(row) for i, row in enumerate(rows))
-                + "\n"
-        )
+        radiant, dire = draft.tup[::2], draft.tup[1::2]
+        radiant_heroes = map(_hero_name_by_hid, radiant)
+        dire_heroes = map(_hero_name_by_hid, dire)
+
+        return f"r: {radiant_heroes} d:{dire_heroes}\n" \
+               f"r: {radiant} d: {dire}"
 
 
 def play_game():
@@ -102,20 +104,66 @@ def play_game():
             break
 
 
+@lru_cache()
+def _hero_name_by_hid(hid):
+    heroes_path = "../data/heroes.json"
+    with open(heroes_path, 'r') as fp:
+        heroes = json.load(fp)
+
+    rid = _hid_to_rid(hid)
+    return heroes[rid]
+
+
+@lru_cache()
+def _hid_to_rid(hid):
+    d_heroes_path = "../data/heroes_dict_reverse.json"
+    with open(d_heroes_path, 'r') as fp:
+        d_heroes = json.load(fp)
+
+    return d_heroes[hid]
+
+
+def _tup_to_draft_onehot(tup):
+    """
+    the tup contains heroes where every other entry is radiant dire.
+    onehot draft
+    """
+    draft = [_hid_to_rid(x) for x in tup]
+    radiant, dire = draft[::2], draft[1::2]
+    oh_radiant, oh_dire = np.zeros(128, dtype=np.uint8)
+
+    for h in radiant:
+        oh_radiant[h] = -1
+
+    for h in dire:
+        oh_dire[h] = 1
+
+    oh_draft = np.concatenate((oh_radiant, oh_dire))
+
+    return oh_draft
+
+
 def _find_winner(tup):
     "Returns None if no winner, True if Radiant wins, False if Dire wins"
 
     # predict winner with MLP model
+    model_path = "../models/mlp_adam_300neurons_logistic_61perc.joblib"
+    clf = joblib.load(model_path)
+    draft = _tup_to_draft_onehot(tup)
+    y_pred = clf.predict(draft)
 
-
-
+    if y_pred == 1:  # radiant win
+        return True
+    elif y_pred == 0:  # dire win
+        return False
 
     return None
 
 
 def new_draft():
-    return Draft(tup=(None,) * 9, turn=True, winner=None, terminal=False)
+    return Draft(tup=(None,) * 10, turn=True, winner=None, terminal=False)
 
 
 if __name__ == "__main__":
-    play_game()
+    print(_hero_name_by_hid("118"))
+    # play_game()
