@@ -45,7 +45,10 @@ class Draft(_TTTB, Node):
     def find_random_child(draft):
         if draft.terminal:
             return None  # If the game is finished then no moves can be made
-        empty_spots = [i for i, value in enumerate(draft.tup) if value is None]
+
+        all_heroes = set(np.arange(0, 119))
+        # empty_spots = [i for i, value in enumerate(draft.tup) if value is None]
+        empty_spots = list(all_heroes - set(draft.tup))
         return draft.make_move(choice(empty_spots))
 
     def reward(draft):
@@ -64,9 +67,19 @@ class Draft(_TTTB, Node):
     def is_terminal(draft):
         return draft.terminal
 
-    def make_move(draft, index):
-        tup = draft.tup[:index] + (draft.turn,) + draft.tup[index + 1:]
+    def make_move(draft, hid):
+
+        next_hero_spot = None
+
+        for i in range(0, 10):
+            if draft.tup[i] is None:
+                next_hero_spot = i
+
+        assert next_hero_spot is not None
+
+        tup = draft.tup[:next_hero_spot] + (hid,) + draft.tup[next_hero_spot + 1:]
         turn = not draft.turn
+        print(turn)
         winner = _find_winner(tup)
         is_terminal = (winner is not None) or not any(v is None for v in tup)
         return Draft(tup, turn, winner, is_terminal)
@@ -85,13 +98,6 @@ def play_game():
     draft = new_draft()
     print(draft.to_pretty_string())
     while True:
-        row_col = input("enter row,col: ")
-        row, col = map(int, row_col.split(","))
-        index = 3 * (row - 1) + (col - 1)
-        if draft.tup[index] is not None:
-            raise RuntimeError("Invalid move")
-        draft = draft.make_move(index)
-        print(draft.to_pretty_string())
         if draft.terminal:
             break
         # You can train as you go, or only at the beginning.
@@ -109,7 +115,7 @@ def _hero_name_by_hid(hid):
     heroes_path = "../data/heroes.json"
     with open(heroes_path, 'r') as fp:
         heroes = json.load(fp)
-
+        heroes = _keys_to_int(heroes)
     rid = _hid_to_rid(hid)
     return heroes[rid]
 
@@ -119,8 +125,8 @@ def _hid_to_rid(hid):
     d_heroes_path = "../data/heroes_dict_reverse.json"
     with open(d_heroes_path, 'r') as fp:
         d_heroes = json.load(fp)
-
-    return d_heroes[hid]
+        d_heroes = _keys_to_int(d_heroes)
+    return int(d_heroes[hid])
 
 
 def _tup_to_draft_onehot(tup):
@@ -130,34 +136,42 @@ def _tup_to_draft_onehot(tup):
     """
     draft = [_hid_to_rid(x) for x in tup]
     radiant, dire = draft[::2], draft[1::2]
-    oh_radiant, oh_dire = np.zeros(128, dtype=np.uint8)
+    draft_oh = np.zeros(129, dtype=np.float)
+    for hid in radiant:
+        draft_oh[hid] = 1.
 
-    for h in radiant:
-        oh_radiant[h] = -1
+    for hid in dire:
+        draft_oh[hid] = -1.
 
-    for h in dire:
-        oh_dire[h] = 1
-
-    oh_draft = np.concatenate((oh_radiant, oh_dire))
-
-    return oh_draft
+    return draft_oh.reshape(1, -1)
 
 
 def _find_winner(tup):
     "Returns None if no winner, True if Radiant wins, False if Dire wins"
+
+    if any(v is None for v in tup):
+        return None
 
     # predict winner with MLP model
     model_path = "../models/mlp_adam_300neurons_logistic_61perc.joblib"
     clf = joblib.load(model_path)
     draft = _tup_to_draft_onehot(tup)
     y_pred = clf.predict(draft)
-
     if y_pred == 1:  # radiant win
+        print(type(y_pred), y_pred[0], "radiant won")
+
         return True
     elif y_pred == 0:  # dire win
+        print(type(y_pred), y_pred[0], "dire won")
+
         return False
 
+    print("No win")
     return None
+
+
+def _keys_to_int(x):
+    return {int(k): v for k, v in x.items()}
 
 
 def new_draft():
@@ -165,5 +179,5 @@ def new_draft():
 
 
 if __name__ == "__main__":
-    print(_hero_name_by_hid("118"))
-    # play_game()
+    # print(_hero_name_by_hid("118"))
+    play_game()
