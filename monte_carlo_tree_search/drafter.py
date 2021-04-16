@@ -38,8 +38,11 @@ class Draft(_TTTB, Node):
         if draft.terminal:  # If the game is finished then no moves can be made
             return set()
         # Otherwise, you can make a move in each of the empty spots
+        all_heroes = set(np.arange(0, 119))
+        empty_spots = list(all_heroes - set(draft.tup))
+
         return {
-            draft.make_move(i) for i, value in enumerate(draft.tup) if value is None
+            draft.make_move(i) for i in empty_spots
         }
 
     def find_random_child(draft):
@@ -47,22 +50,21 @@ class Draft(_TTTB, Node):
             return None  # If the game is finished then no moves can be made
 
         all_heroes = set(np.arange(0, 119))
-        # empty_spots = [i for i, value in enumerate(draft.tup) if value is None]
         empty_spots = list(all_heroes - set(draft.tup))
         return draft.make_move(choice(empty_spots))
 
     def reward(draft):
         if not draft.terminal:
             raise RuntimeError(f"reward called on nonterminal board {draft}")
-        if draft.winner is draft.turn:
-            # It's your turn and you've already won. Should be impossible.
-            raise RuntimeError(f"reward called on unreachable board {draft}")
-        if draft.turn is (not draft.winner):
+        if draft.winner:
+            return 1
+        elif draft.winner is None:
+            return 0.5
+        else:
             return 0  # Your opponent has just won. Bad.
-        if draft.winner is None:
-            return 0.5  # Board is a tie
-        # The winner is neither True, False, nor None
-        raise RuntimeError(f"board has unknown winner type {draft.winner}")
+        #
+        # # The winner is neither True, False, nor None
+        # raise RuntimeError(f"board has unknown winner type {draft.winner}")
 
     def is_terminal(draft):
         return draft.terminal
@@ -79,54 +81,43 @@ class Draft(_TTTB, Node):
 
         tup = draft.tup[:next_hero_spot] + (hid,) + draft.tup[next_hero_spot + 1:]
         turn = not draft.turn
-        print(turn)
         winner = _find_winner(tup)
         is_terminal = (winner is not None) or not any(v is None for v in tup)
+        # print("Turn: {}, Winner: {}, is_terminal: {}, draft: {}".format("radiant" if turn else "dire", winner, is_terminal, tup))
+
         return Draft(tup, turn, winner, is_terminal)
 
     def to_pretty_string(draft):
         radiant, dire = draft.tup[::2], draft.tup[1::2]
-        radiant_heroes = map(_hero_name_by_hid, radiant)
-        dire_heroes = map(_hero_name_by_hid, dire)
+        radiant_heroes = [_hero_name_by_hid(x) for x in radiant]
+        dire_heroes = [_hero_name_by_hid(x) for x in dire]
 
         return f"r: {radiant_heroes} d:{dire_heroes}\n" \
                f"r: {radiant} d: {dire}"
 
 
-def play_game():
-    tree = MCTS()
-    draft = new_draft()
-    print(draft.to_pretty_string())
-    while True:
-        if draft.terminal:
-            break
-        # You can train as you go, or only at the beginning.
-        # Here, we train as we go, doing fifty rollouts each turn.
-        for _ in range(50):
-            tree.do_rollout(draft)
-        draft = tree.choose(draft)
-        print(draft.to_pretty_string())
-        if draft.terminal:
-            break
+@lru_cache()
+def _hid_to_rid(hid):
+    d_heroes_path = "../data/hid_to_rid_dict.json"
+    with open(d_heroes_path, 'r') as fp:
+        d_heroes = json.load(fp)
+        d_heroes = _json_k_v_to_int(d_heroes)
+
+    return d_heroes[hid]
 
 
 @lru_cache()
 def _hero_name_by_hid(hid):
+    if hid is None:
+        return None
+
     heroes_path = "../data/heroes.json"
     with open(heroes_path, 'r') as fp:
         heroes = json.load(fp)
         heroes = _keys_to_int(heroes)
+
     rid = _hid_to_rid(hid)
     return heroes[rid]
-
-
-@lru_cache()
-def _hid_to_rid(hid):
-    d_heroes_path = "../data/heroes_dict_reverse.json"
-    with open(d_heroes_path, 'r') as fp:
-        d_heroes = json.load(fp)
-        d_heroes = _keys_to_int(d_heroes)
-    return int(d_heroes[hid])
 
 
 def _tup_to_draft_onehot(tup):
@@ -134,9 +125,9 @@ def _tup_to_draft_onehot(tup):
     the tup contains heroes where every other entry is radiant dire.
     onehot draft
     """
-    draft = [_hid_to_rid(x) for x in tup]
-    radiant, dire = draft[::2], draft[1::2]
-    draft_oh = np.zeros(129, dtype=np.float)
+    radiant, dire = tup[::2], tup[1::2]
+    draft_oh = np.zeros(119, dtype=np.float)
+
     for hid in radiant:
         draft_oh[hid] = 1.
 
@@ -158,26 +149,48 @@ def _find_winner(tup):
     draft = _tup_to_draft_onehot(tup)
     y_pred = clf.predict(draft)
     if y_pred == 1:  # radiant win
-        print(type(y_pred), y_pred[0], "radiant won")
-
         return True
     elif y_pred == 0:  # dire win
-        print(type(y_pred), y_pred[0], "dire won")
-
         return False
 
-    print("No win")
     return None
+
+
+def _winner_proba(tup):
+    model_path = "../models/mlp_adam_300neurons_logistic_61perc.joblib"
+    clf = joblib.load(model_path)
+    draft = _tup_to_draft_onehot(tup)
+    return clf.predict_proba(draft)
 
 
 def _keys_to_int(x):
     return {int(k): v for k, v in x.items()}
 
 
+def _json_k_v_to_int(x):
+    return {int(k): int(v) for k, v in x.items()}
+
+
 def new_draft():
     return Draft(tup=(None,) * 10, turn=True, winner=None, terminal=False)
 
 
+def play_game():
+    tree = MCTS()
+    draft = new_draft()
+    while True:
+        # You can train as you go, or only at the beginning.
+        # Here, we train as we go, doing fifty rollouts each turn.
+        for _ in range(1000):
+            tree.do_rollout(draft)
+        draft = tree.choose(draft)
+        print(draft.to_pretty_string())
+        if draft.terminal:
+            print(_winner_proba(draft.tup))
+            break
+
+
 if __name__ == "__main__":
     # print(_hero_name_by_hid("118"))
+    # print(_hid_to_rid(117))
     play_game()
