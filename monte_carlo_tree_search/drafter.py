@@ -23,6 +23,7 @@ import json
 import joblib
 import numpy as np
 
+from tqdm import tqdm
 from functools import lru_cache
 from collections import namedtuple
 from random import choice
@@ -89,11 +90,10 @@ class Draft(_TTTB, Node):
 
     def to_pretty_string(draft):
         radiant, dire = draft.tup[::2], draft.tup[1::2]
-        radiant_heroes = [_hero_name_by_hid(x) for x in radiant]
-        dire_heroes = [_hero_name_by_hid(x) for x in dire]
+        radiant_heroes = [(_hero_name_by_hid(x), x) for x in radiant]
+        dire_heroes = [(_hero_name_by_hid(x), x) for x in dire]
 
-        return f"r: {radiant_heroes} d:{dire_heroes}\n" \
-               f"r: {radiant} d: {dire}"
+        return f"r: {radiant_heroes} d:{dire_heroes}"
 
 
 @lru_cache()
@@ -125,7 +125,8 @@ def _tup_to_draft_onehot(tup):
     the tup contains heroes where every other entry is radiant dire.
     onehot draft
     """
-    radiant, dire = tup[::2], tup[1::2]
+    radiant = sorted(tup[::2], key=lambda x: x)
+    dire = sorted(tup[1::2], key=lambda x: x)
     draft_oh = np.zeros(119, dtype=np.float)
 
     for hid in radiant:
@@ -174,14 +175,19 @@ def _json_k_v_to_int(x):
 def new_draft():
     return Draft(tup=(None,) * 10, turn=True, winner=None, terminal=False)
 
+# import numba
 
+
+# @numba.jit(parallel=True)
 def play_game():
+    n_rollouts = 300
     tree = MCTS()
     draft = new_draft()
+
     while True:
         # You can train as you go, or only at the beginning.
         # Here, we train as we go, doing fifty rollouts each turn.
-        for _ in range(1000):
+        for _ in tqdm(range(n_rollouts)):
             tree.do_rollout(draft)
         draft = tree.choose(draft)
         print(draft.to_pretty_string())
