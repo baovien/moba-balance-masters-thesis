@@ -70,6 +70,7 @@ class MCTS:
                 reward = node.reward()
                 return 1 - reward if invert_reward else reward
             node = node.find_random_child()
+
             invert_reward = not invert_reward
 
     def _backpropagate(self, path, reward):

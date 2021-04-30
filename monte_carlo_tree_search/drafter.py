@@ -31,7 +31,6 @@ from monte_carlo_tree_search.mcts import MCTS, Node
 
 _TTTB = namedtuple("Draft", "tup turn winner terminal")
 
-
 # Inheriting from a namedtuple is convenient because it makes the class
 # immutable and predefines __init__, __repr__, __hash__, __eq__, and others
 class Draft(_TTTB, Node):
@@ -40,10 +39,10 @@ class Draft(_TTTB, Node):
             return set()
         # Otherwise, you can make a move in each of the empty spots
         all_heroes = set(np.arange(0, 119))
-        empty_spots = list(all_heroes - set(draft.tup))
+        available_heroes = list(all_heroes - set(draft.tup))
 
         return {
-            draft.make_move(i) for i in empty_spots
+            draft.make_move(i) for i in available_heroes
         }
 
     def find_random_child(draft):
@@ -51,8 +50,8 @@ class Draft(_TTTB, Node):
             return None  # If the game is finished then no moves can be made
 
         all_heroes = set(np.arange(0, 119))
-        empty_spots = list(all_heroes - set(draft.tup))
-        return draft.make_move(choice(empty_spots))
+        available_heroes = list(all_heroes - set(draft.tup))
+        return draft.make_move(choice(available_heroes))
 
     def reward(draft):
         if not draft.terminal:
@@ -144,22 +143,22 @@ def _find_winner(tup):
     if any(v is None for v in tup):
         return None
 
-    # predict winner with MLP model
-    model_path = "../models/mlp_adam_300neurons_logistic_61perc.joblib"
-    clf = joblib.load(model_path)
+    clf = get_model()
     draft = _tup_to_draft_onehot(tup)
     y_pred = clf.predict(draft)
+
     if y_pred == 1:  # radiant win
         return True
     elif y_pred == 0:  # dire win
         return False
 
+
+
     return None
 
 
 def _winner_proba(tup):
-    model_path = "../models/mlp_adam_300neurons_logistic_61perc.joblib"
-    clf = joblib.load(model_path)
+    clf = get_model()
     draft = _tup_to_draft_onehot(tup)
     return clf.predict_proba(draft)
 
@@ -175,12 +174,17 @@ def _json_k_v_to_int(x):
 def new_draft():
     return Draft(tup=(None,) * 10, turn=True, winner=None, terminal=False)
 
-# import numba
+
+@lru_cache()
+def get_model():
+    model_path = "../models/mlp_adam_300neurons_logistic_61perc.joblib"
+    model = joblib.load(model_path)
+
+    return model
 
 
-# @numba.jit(parallel=True)
 def play_game():
-    n_rollouts = 300
+    n_rollouts = 200
     tree = MCTS()
     draft = new_draft()
 
@@ -190,8 +194,11 @@ def play_game():
         for _ in tqdm(range(n_rollouts)):
             tree.do_rollout(draft)
         draft = tree.choose(draft)
+
         print(draft.to_pretty_string())
+
         if draft.terminal:
+            print(tree.Q)
             print(_winner_proba(draft.tup))
             break
 
