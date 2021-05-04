@@ -5,8 +5,25 @@ See also https://en.wikipedia.org/wiki/Monte_Carlo_tree_search
 https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
 """
 from abc import ABC, abstractmethod
-from collections import defaultdict
+from collections import defaultdict, Counter
 import math
+
+
+class EvidenceRegister:
+    evidence = defaultdict(Counter)
+    current_move_node = None
+
+    @staticmethod
+    def register(evidence):
+        EvidenceRegister.evidence[EvidenceRegister.current_move_node][evidence] += 1
+
+    @staticmethod
+    def set_move_node(node):
+        EvidenceRegister.current_move_node = node
+
+    @staticmethod
+    def clear():
+        EvidenceRegister.evidence.clear()
 
 
 class MCTS:
@@ -17,6 +34,15 @@ class MCTS:
         self.N = defaultdict(int)  # total visit count for each node
         self.children = dict()  # children of each node
         self.exploration_weight = exploration_weight
+
+    def register_explanation(self, move_node, evidence):
+        pass
+
+    def clear(self):
+        EvidenceRegister.clear()
+        self.Q.clear()  # total reward of each node
+        self.N.clear()  # total visit count for each node
+        self.children.clear()  # children of each node
 
     def choose(self, node):
         "Choose the best successor of node. (Choose a move in the game)"
@@ -38,7 +64,15 @@ class MCTS:
         path = self._select(node)
         leaf = path[-1]
         self._expand(leaf)
+
+        move_node = None
+        if len(path) > 1:
+            EvidenceRegister.set_move_node(move_node)
+        else:
+            EvidenceRegister.set_move_node(None)
+
         reward = self._simulate(leaf)
+
         self._backpropagate(path, reward)
 
     def _select(self, node):
@@ -64,11 +98,16 @@ class MCTS:
 
     def _simulate(self, node):
         "Returns the reward for a random simulation (to completion) of `node`"
+
         invert_reward = True
+
         while True:
             if node.is_terminal():
                 reward = node.reward()
-                return 1 - reward if invert_reward else reward
+                team_reward = 1 - reward if invert_reward else reward
+
+                return team_reward
+
             node = node.find_random_child()
 
             invert_reward = not invert_reward
