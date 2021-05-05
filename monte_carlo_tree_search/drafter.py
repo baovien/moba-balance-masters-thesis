@@ -27,9 +27,17 @@ from tqdm import tqdm
 from functools import lru_cache
 from collections import namedtuple
 from random import choice
-from monte_carlo_tree_search.mcts import MCTS, Node
+from itertools import permutations
+
+from typing import Tuple
+
+from monte_carlo_tree_search.mcts import MCTS, EvidenceRegister, Node
+from sklearn.neural_network import MLPClassifier
+import matplotlib.pyplot as plt
+import pandas as pd
 
 _TTTB = namedtuple("Draft", "tup turn winner terminal")
+
 
 # Inheriting from a namedtuple is convenient because it makes the class
 # immutable and predefines __init__, __repr__, __hash__, __eq__, and others
@@ -62,9 +70,6 @@ class Draft(_TTTB, Node):
             return 0.5
         else:
             return 0  # Your opponent has just won. Bad.
-        #
-        # # The winner is neither True, False, nor None
-        # raise RuntimeError(f"board has unknown winner type {draft.winner}")
 
     def is_terminal(draft):
         return draft.terminal
@@ -81,8 +86,12 @@ class Draft(_TTTB, Node):
 
         tup = draft.tup[:next_hero_spot] + (hid,) + draft.tup[next_hero_spot + 1:]
         turn = not draft.turn
-        winner = _find_winner(tup)
-        is_terminal = (winner is not None) or not any(v is None for v in tup)
+        is_terminal = not any(v is None for v in tup)
+        winner = None
+        explainer = None
+        if is_terminal:
+            winner = _find_winner(tup)
+
         # print("Turn: {}, Winner: {}, is_terminal: {}, draft: {}".format("radiant" if turn else "dire", winner, is_terminal, tup))
 
         return Draft(tup, turn, winner, is_terminal)
@@ -137,22 +146,92 @@ def _tup_to_draft_onehot(tup):
     return draft_oh.reshape(1, -1)
 
 
+def rules_to_feature(rules=None, draft=None):
+    # rules = {('pair_same', (104, 86)): 0,
+    #          ('pair_same', (42, 49)): 1,
+    #          ('pair_same', (10, 23)): 2,
+    #          ('pair_same', (24, 35)): 3,
+    #          ('pair_opp', (104, 11)): 4,
+    #          ('pair_opp', (86, 11)): 5,
+    #          ('hero', 11): 6,
+    #          ('pair_same', (72, 109)): 7,
+    #          ('pair_same', (54, 105)): 8}
+    # draft = [[42, 49, 22, 11, 105], [104, 110, 86, 100, 89]]
+    #
+    # t0 = set(draft[0])
+    # t1 = set(draft[1])
+
+    t0 = set(sorted(draft[::2], key=lambda x: x))
+    t1 = set(sorted(draft[1::2], key=lambda x: x))
+
+    t0_opp_pairs = [{x, y} for x in t0 for y in t1]
+    t1_opp_pairs = [{x, y} for x in t1 for y in t0]
+
+    features = np.zeros(14161)
+
+    for rule, rule_i in rules.items():
+        r_type = rule[0]
+        r_heroes = rule[1]
+        if type(r_heroes) is tuple:
+            r_heroes = set(r_heroes)
+
+        if r_type == "pair_same":
+            if r_heroes.issubset(t0):
+                # if all(i in t0 for i in r_heroes):
+                features[rule_i] = 1.
+
+            # if all(i in t1 for i in r_heroes):
+            if r_heroes.issubset(t1):
+                features[rule_i] = -1.
+
+        elif r_type == "pair_opp":
+            if r_heroes in t0_opp_pairs:
+                features[rule_i] = 1.
+
+            if r_heroes in t1_opp_pairs:
+                features[rule_i] = -1.
+
+        elif r_type == "hero":
+            if r_heroes in t0:
+                features[rule_i] = 1.
+            if r_heroes in t1:
+                features[rule_i] = -1.
+        else:
+            raise Exception(f"No rule with type {r_type}")
+
+    print(features[:10])
+
+
 def _find_winner(tup):
     "Returns None if no winner, True if Radiant wins, False if Dire wins"
 
-    if any(v is None for v in tup):
-        return None
+    assert not any(v is None for v in tup)
 
     clf = get_model()
     draft = _tup_to_draft_onehot(tup)
     y_pred = clf.predict(draft)
 
+    coefs = clf.coefs_[-1]  # mlp coefs (n_layers - 1,) #todo
+
+    '''
+    winner = clf.predict(draft)
+    
+    for feature in draft/feature_set:
+        if abs(feature) > 0:
+            H.add(weight_k, feature_k)
+
+    evidence = (H.top, winner)
+    EvidenceRegister.register(evidence)
+
+    '''
+
+    evidence = (0, 1, 2, "winner")
+    EvidenceRegister.register(evidence)
+
     if y_pred == 1:  # radiant win
         return True
     elif y_pred == 0:  # dire win
         return False
-
-
 
     return None
 
@@ -178,6 +257,8 @@ def new_draft():
 @lru_cache()
 def get_model():
     model_path = "../models/mlp_adam_300neurons_logistic_61perc.joblib"
+    # model_path = "../models/logreg_iter200_57perc.joblib"
+
     model = joblib.load(model_path)
 
     return model
@@ -191,19 +272,22 @@ def play_game():
     while True:
         # You can train as you go, or only at the beginning.
         # Here, we train as we go, doing fifty rollouts each turn.
+        tree.clear()
+
         for _ in tqdm(range(n_rollouts)):
             tree.do_rollout(draft)
         draft = tree.choose(draft)
-
         print(draft.to_pretty_string())
 
         if draft.terminal:
-            print(tree.Q)
+            print(draft.to_pretty_string())
             print(_winner_proba(draft.tup))
+            print(EvidenceRegister.evidence)
             break
 
 
 if __name__ == "__main__":
     # print(_hero_name_by_hid("118"))
     # print(_hid_to_rid(117))
-    play_game()
+    # play_game()
+    rules_to_feature()
