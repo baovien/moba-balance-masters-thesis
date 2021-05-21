@@ -6,7 +6,24 @@ https://gist.github.com/qpwo/c538c6f73727e254fdc7fab81024f6e1
 """
 from abc import ABC, abstractmethod
 from collections import defaultdict, Counter
+import joblib
 import math
+import pickle
+
+
+class DataLib:
+    rules = None
+    model = None
+
+    @staticmethod
+    def load_model():
+        model_path = "../models/logreg_7080_features.joblib"
+        DataLib.model = joblib.load(model_path)
+
+    @staticmethod
+    def load_rules():
+        with open("../data/etc/rules_7080.pkl", "rb") as fp:
+            DataLib.rules = pickle.load(fp)
 
 
 class EvidenceRegister:

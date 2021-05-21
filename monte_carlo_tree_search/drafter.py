@@ -20,6 +20,8 @@ corrresponds to this tuple:
 """
 
 import json
+import pickle
+import timeit
 import joblib
 import numpy as np
 
@@ -31,7 +33,7 @@ from itertools import permutations
 
 from typing import Tuple
 
-from monte_carlo_tree_search.mcts import MCTS, EvidenceRegister, Node
+from monte_carlo_tree_search.mcts import MCTS, EvidenceRegister, Node, DataLib
 from sklearn.neural_network import MLPClassifier
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -146,60 +148,52 @@ def _tup_to_draft_onehot(tup):
     return draft_oh.reshape(1, -1)
 
 
-def rules_to_feature(rules=None, draft=None):
-    # rules = {('pair_same', (104, 86)): 0,
-    #          ('pair_same', (42, 49)): 1,
-    #          ('pair_same', (10, 23)): 2,
-    #          ('pair_same', (24, 35)): 3,
-    #          ('pair_opp', (104, 11)): 4,
-    #          ('pair_opp', (86, 11)): 5,
-    #          ('hero', 11): 6,
-    #          ('pair_same', (72, 109)): 7,
-    #          ('pair_same', (54, 105)): 8}
-    # draft = [[42, 49, 22, 11, 105], [104, 110, 86, 100, 89]]
-    #
-    # t0 = set(draft[0])
-    # t1 = set(draft[1])
+def draft_to_features(draft):
+    rules = DataLib.rules["features_to_index"]
 
     t0 = set(sorted(draft[::2], key=lambda x: x))
     t1 = set(sorted(draft[1::2], key=lambda x: x))
 
-    t0_opp_pairs = [{x, y} for x in t0 for y in t1]
-    t1_opp_pairs = [{x, y} for x in t1 for y in t0]
+    t0_opp_pairs = np.array(np.meshgrid(t0, t1)).T.reshape(-1, 2)
+    t1_opp_pairs = np.array(np.meshgrid(t1, t0)).T.reshape(-1, 2)
 
-    features = np.zeros(14161)
+    features = np.zeros(len(rules))
 
     for rule, rule_i in rules.items():
         r_type = rule[0]
         r_heroes = rule[1]
+
         if type(r_heroes) is tuple:
             r_heroes = set(r_heroes)
 
-        if r_type == "pair_same":
-            if r_heroes.issubset(t0):
-                # if all(i in t0 for i in r_heroes):
-                features[rule_i] = 1.
-
-            # if all(i in t1 for i in r_heroes):
-            if r_heroes.issubset(t1):
-                features[rule_i] = -1.
+        # if r_type == "pair_same":
+        #     if r_heroes.issubset(t0):
+        #         features[rule_i] = 1.
+        #
+        #     if r_heroes.issubset(t1):
+        #
+        #         features[rule_i] = -1.
 
         elif r_type == "pair_opp":
             if r_heroes in t0_opp_pairs:
+                print(f"rule {rule}")
                 features[rule_i] = 1.
 
             if r_heroes in t1_opp_pairs:
+                print(f"rule {rule}")
                 features[rule_i] = -1.
 
         elif r_type == "hero":
             if r_heroes in t0:
+
                 features[rule_i] = 1.
             if r_heroes in t1:
+
                 features[rule_i] = -1.
         else:
             raise Exception(f"No rule with type {r_type}")
 
-    print(features[:10])
+    return features.reshape(1, -1)
 
 
 def _find_winner(tup):
@@ -207,11 +201,11 @@ def _find_winner(tup):
 
     assert not any(v is None for v in tup)
 
-    clf = get_model()
-    draft = _tup_to_draft_onehot(tup)
+    clf = DataLib.model
+    draft = draft_to_features(tup)
     y_pred = clf.predict(draft)
 
-    coefs = clf.coefs_[-1]  # mlp coefs (n_layers - 1,) #todo
+    coefs = clf.coef_[-1]  # mlp coefs (n_layers - 1,) #todo
 
     '''
     winner = clf.predict(draft)
@@ -237,8 +231,8 @@ def _find_winner(tup):
 
 
 def _winner_proba(tup):
-    clf = get_model()
-    draft = _tup_to_draft_onehot(tup)
+    clf = DataLib.model
+    draft = draft_to_features(tup)
     return clf.predict_proba(draft)
 
 
@@ -254,18 +248,11 @@ def new_draft():
     return Draft(tup=(None,) * 10, turn=True, winner=None, terminal=False)
 
 
-@lru_cache()
-def get_model():
-    model_path = "../models/mlp_adam_300neurons_logistic_61perc.joblib"
-    # model_path = "../models/logreg_iter200_57perc.joblib"
-
-    model = joblib.load(model_path)
-
-    return model
-
-
 def play_game():
-    n_rollouts = 200
+    DataLib.load_rules()
+    DataLib.load_model()
+
+    n_rollouts = 10
     tree = MCTS()
     draft = new_draft()
 
@@ -277,7 +264,7 @@ def play_game():
         for _ in tqdm(range(n_rollouts)):
             tree.do_rollout(draft)
         draft = tree.choose(draft)
-        print(draft.to_pretty_string())
+        # print(draft.to_pretty_string())
 
         if draft.terminal:
             print(draft.to_pretty_string())
@@ -289,5 +276,4 @@ def play_game():
 if __name__ == "__main__":
     # print(_hero_name_by_hid("118"))
     # print(_hid_to_rid(117))
-    # play_game()
-    rules_to_feature()
+    play_game()
