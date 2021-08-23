@@ -3,7 +3,7 @@ data/game_features.npz
 data/big*
 .env
 .ipynb_checkpoints
-
+.vscode/
 
 
 # Created by .ignore support plugin (hsz.mobi)
