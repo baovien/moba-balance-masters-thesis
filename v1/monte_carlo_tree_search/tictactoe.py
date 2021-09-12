@@ -21,7 +21,7 @@ corrresponds to this tuple:
 
 from collections import namedtuple
 from random import choice
-from monte_carlo_tree_search.mcts import MCTS, Node
+from v1.monte_carlo_tree_search.mcts import MCTS, Node
 
 _TTTB = namedtuple("TicTacToeBoard", "tup turn winner terminal")
 

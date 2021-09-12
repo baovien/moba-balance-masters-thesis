@@ -22,7 +22,7 @@ class DataLib:
 
     @staticmethod
     def load_rules():
-        with open("../data/etc/rules_7080.pkl", "rb") as fp:
+        with open("../../data/v1/etc/rules_7080.pkl", "rb") as fp:
             DataLib.rules = pickle.load(fp)
 
 

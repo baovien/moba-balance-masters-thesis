@@ -20,23 +20,14 @@ corrresponds to this tuple:
 """
 
 import json
-import pickle
-import timeit
-import joblib
 import numpy as np
 
 from tqdm import tqdm
 from functools import lru_cache
 from collections import namedtuple
 from random import choice
-from itertools import permutations
 
-from typing import Tuple
-
-from monte_carlo_tree_search.mcts import MCTS, EvidenceRegister, Node, DataLib
-from sklearn.neural_network import MLPClassifier
-import matplotlib.pyplot as plt
-import pandas as pd
+from v1.monte_carlo_tree_search.mcts import MCTS, EvidenceRegister, Node, DataLib
 
 _TTTB = namedtuple("Draft", "tup turn winner terminal")
 
@@ -108,7 +99,7 @@ class Draft(_TTTB, Node):
 
 @lru_cache()
 def _hid_to_rid(hid):
-    d_heroes_path = "../data/hid_to_rid_dict.json"
+    d_heroes_path = "../../data/v1/hid_to_rid_dict.json"
     with open(d_heroes_path, 'r') as fp:
         d_heroes = json.load(fp)
         d_heroes = _json_k_v_to_int(d_heroes)
@@ -121,7 +112,7 @@ def _hero_name_by_hid(hid):
     if hid is None:
         return None
 
-    heroes_path = "../data/heroes.json"
+    heroes_path = "../../data/v1/heroes.json"
     with open(heroes_path, 'r') as fp:
         heroes = json.load(fp)
         heroes = _keys_to_int(heroes)
