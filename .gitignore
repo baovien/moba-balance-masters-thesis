@@ -6,7 +6,8 @@ old/data/
 .env
 .ipynb_checkpoints
 .vscode/
-
+role-classifier/data/parsed/*
+role-classifier/data/opendota_parsed_matches.tar.gz
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
