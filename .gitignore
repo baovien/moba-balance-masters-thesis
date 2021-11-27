@@ -9,6 +9,8 @@ old/data/
 .vscode/
 role-classifier/data/parsed/*
 role-classifier/data/opendota_parsed_matches.tar.gz
+role-classifier/data/open_dota_matches/*
+
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
