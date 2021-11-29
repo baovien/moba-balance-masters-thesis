@@ -10,7 +10,7 @@ old/data/
 role-classifier/data/parsed/*
 role-classifier/data/opendota_parsed_matches.tar.gz
 role-classifier/data/open_dota_matches/*
-
+role-classifier/data/dataset_positions.pkl
 
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
