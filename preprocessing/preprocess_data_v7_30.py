@@ -19,50 +19,60 @@ import tqdm
 # def _get_hero_name_by_id(idx: int):
 #     return df_heroes[df_heroes["id"].index == idx]["localized_name"].values[0]
 
+def is_valid_match(match):
+    if not "match_id" in match:
+        return False
 
-def main():
     with open("../data/heroes.json", "r") as fp: 
         heroes = json.load(fp)
-        
-    df_heroes = pd.DataFrame(heroes)
-    id_to_hid = df_heroes[["id"]].to_dict()["id"]
-    hid_to_id = {v:k for k,v in id_to_hid.items()}
 
+    players = match["players"]
+
+    if len(players) != 10:
+        return False
+    if not match["lobby_type"] in {0, 5, 6, 7}:
+        print("Invalid lobby type:", match["lobby_type"])
+        return False
+    if match["duration"] < 60 * 20:
+        print("Invalid duration:", match["duration"])
+        return False
+    if not match["game_mode"] in {1, 2, 16, 22}:
+        print("Invalid game mode:", match["game_mode"])
+        return False
+
+    hero_ids = [hero["id"] for hero in heroes]
+    invalid_hero_id = False
+
+    for p in players:
+        if p["hero_id"] not in hero_ids:
+            invalid_hero_id = True
+            break                
+    
+    if invalid_hero_id:
+        return False
+
+    return True
+
+
+def main():
     samples = []
     seen_matches = set()
 
     with gzip.open("../data/raw/test_5146330922-5148330922.gz", "r") as fp:
         for line in tqdm.tqdm(fp):
             match = json.loads(line)
-            players = match["players"]
+            
+            if not is_valid_match(match):
+                continue
+
             match_id = match["match_id"]
-            
-            # match data must contain the key match_id 
-            if not "match_id" in match:
-                continue
-            
-            # match must contain 10 players 
-            if len(players) != 10:
-                continue
             
             # match must be unique
             if match_id in seen_matches:
                 continue
-            
-            # match heroids must match one of the ids in hero details
-            invalid_hero_id = False
-
-            for p in players:
-                if p["hero_id"] not in hid_to_id.keys():
-                    invalid_hero_id = True
-                    break                
-            
-            if invalid_hero_id:
-                continue
 
             seen_matches.add(match_id)
             samples.append(line)
-            break
             
     print("seen matches: {}, n samples: {}".format(len(seen_matches), len(samples)))
 
