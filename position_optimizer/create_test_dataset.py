@@ -4,6 +4,7 @@ import json
 import numpy as np
 import pandas as pd
 import tqdm
+
 pd.set_option('display.max_rows', 100)
 
 
@@ -59,12 +60,6 @@ with gzip.open("../data/raw/matches_5148330922-5148330922.gz", "r") as fp:
         if match_id in seen_matches:
             invalid += 1
             continue
-        
-        
-        training_samples = {
-            
-
-        }
 
         results.append(match["players"])
         seen_matches.add(match_id)
