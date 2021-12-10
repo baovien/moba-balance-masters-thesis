@@ -2,7 +2,7 @@ data/raw
 data/dota_games.zip
 data/game_features.npz
 data/big*
-data/testset
+data/raw
 old/data/
 .env
 .ipynb_checkpoints
