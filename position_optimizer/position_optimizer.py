@@ -10,14 +10,16 @@ from collections import Counter
 from itertools import permutations
 
 class PositionOptimizer:
-    def __init__(self, clfs_path='data/clfs/logreg_clfs_all.pkl') -> None:
+    def __init__(self, clfs_path: str, hero_path: str) -> None:
+        self.clfs_path = clfs_path
+        self.hero_path = hero_path
         self.opendota_data = {}
         self.clfs = defaultdict(list)
         self.role_counts = defaultdict(dict)
         self.hero_data = {}
 
         self._load_clfs(clfs_path)
-        self._load_hero_data()
+        self._load_hero_data(hero_path)
         self._load_opendota_data()
         self.hid_to_name = {h["id"]: h["localized_name"] for h in self.hero_data}
 
@@ -112,11 +114,11 @@ class PositionOptimizer:
             self.opendota_data = pickle.load(f)
 
 
-    def _load_hero_data(self) -> None:
+    def _load_hero_data(self, hero_path) -> None:
         """
         Load hero data from data/heroes.json
         """
-        with open('data/heroes.json', 'r') as f:
+        with open(hero_path, 'r') as f:
             self.hero_data = json.load(f)
 
 def is_valid_match(match):
@@ -135,7 +137,7 @@ def is_valid_match(match):
     return True
 
 if __name__ == '__main__':
-    po = PositionOptimizer()
+    po = PositionOptimizer(clfs_path='data/clfs/logreg_clfs_all.pkl', hero_path='data/heroes.json')
 
     with open("data/steam_api_match_example.json", "r") as f:
         match = json.load(f)
