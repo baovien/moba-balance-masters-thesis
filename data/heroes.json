@@ -1693,20 +1693,5 @@
             "Durable"
         ],
         "legs": 2
-    },
-    {
-        "id": 136,
-        "name": "npc_dota_hero_marci",
-        "localized_name": "Marci",
-        "primary_attr": "str",
-        "attack_type": "Melee",
-        "roles": [
-            "Support",
-            "Carry",
-            "Initiator",
-            "Disabler",
-            "Escape"
-        ],
-        "legs": 2
     }
 ]

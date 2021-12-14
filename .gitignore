@@ -2,6 +2,7 @@ data/raw
 data/dota_games.zip
 data/game_features.npz
 data/big*
+data/virtual_loss_training_data
 data/raw
 old/data/
 .env
