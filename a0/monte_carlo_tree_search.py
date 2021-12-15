@@ -19,17 +19,20 @@ def ucb_score(parent, child):
 
 class Node:
     def __init__(self, prior, to_play):
-        self.visit_count = 0
-        self.to_play = to_play
-        self.prior = prior
-        self.value_sum = 0
-        self.children = {}
-        self.state = None
+        self.visit_count = 0        # Number of times this node has been visited during MCTS. "Good" are visited more than "bad" states.
+        self.to_play = to_play      # The player whose turn it is to play (1 or -1)
+        self.prior = prior          # The prior prob of selecting this state from its parent
+        self.value_sum = 0          # The total value of this state from all visits
+        self.children = {}          # A lookup of legal child positions
+        self.state = None           # The board state at this node
 
     def expanded(self):
         return len(self.children) > 0
 
     def value(self):
+        """
+        Average value for a node
+        """
         if self.visit_count == 0:
             return 0
         return self.value_sum / self.visit_count

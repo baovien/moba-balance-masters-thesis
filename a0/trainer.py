@@ -80,12 +80,12 @@ class Trainer:
                 target_vs = torch.FloatTensor(np.array(vs).astype(np.float64))
 
                 # predict
-                # boards = boards.contiguous().cuda()
-                # target_pis = target_pis.contiguous().cuda()
-                # target_vs = target_vs.contiguous().cuda()
-                boards = boards.contiguous()
-                target_pis = target_pis.contiguous()
-                target_vs = target_vs.contiguous()
+                boards = boards.contiguous().cuda()
+                target_pis = target_pis.contiguous().cuda()
+                target_vs = target_vs.contiguous().cuda()
+                # boards = boards.contiguous()
+                # target_pis = target_pis.contiguous()
+                # target_vs = target_vs.contiguous()
 
                 # compute output
                 out_pi, out_v = self.model(boards)

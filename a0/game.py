@@ -1,17 +1,17 @@
 import numpy as np
 import random
 
-class Dota2Draft:
+class Dota2Game:
     """
     A very, very simple game of ConnectX in which we have:
         rows: 1
-        columns: 10
+        columns: 4
         winNumber: 2
     """
 
     def __init__(self):
-        self.columns = 10
-        self.done_draft = 10
+        self.columns = 121
+        self.win = 10
 
     def get_init_board(self):
         b = np.zeros((self.columns,), dtype=np.int)
@@ -47,15 +47,18 @@ class Dota2Draft:
 
         return valid_moves
 
-    def is_draft_done(self, board, player):
+    def is_win(self, board, player):
         count = 0
         for index in range(self.columns):
-            if board[index] == player:
-                count = count + 1
-            else:
-                count = 0
+            if board[index] !=0:
+                count += 1
 
-            if count == self.done_draft:
+            # if board[index] == player:
+            #     count = count + 1
+            # else:
+            #     count = 0
+
+            if count == self.win:
                 return True
 
         return False
@@ -66,17 +69,16 @@ class Dota2Draft:
     def get_reward_for_player(self, board, player):
         # return None if not ended, 1 if player 1 wins, -1 if player 1 lost
 
-        if self.is_draft_done(board, player):
+        if self.is_win(board, player):
             return self.virtual_loss()
-        if self.is_draft_done(board, -player):
+        if self.is_win(board, -player):
             return 1 - self.virtual_loss()
         if self.has_legal_moves(board):
             return None
 
-        return 0
-
     def get_canonical_board(self, board, player):
         return player * board
+
 
 
 

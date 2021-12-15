@@ -15,12 +15,20 @@ class Connect2Model(nn.Module):
         self.size = board_size
         self.action_size = action_size
 
-        self.fc1 = nn.Linear(in_features=self.size, out_features=16)
-        self.fc2 = nn.Linear(in_features=16, out_features=16)
+        # self.fc1 = nn.Linear(in_features=self.size, out_features=16)
+        # self.fc2 = nn.Linear(in_features=16, out_features=16)
+
+        # # Two heads on our network
+        # self.action_head = nn.Linear(in_features=16, out_features=self.action_size)
+        # self.value_head = nn.Linear(in_features=16, out_features=1)
+
+        self.fc1 = nn.Linear(in_features=self.size, out_features=self.size*3)
+        self.fc2 = nn.Linear(in_features=self.size*3, out_features=self.size*3)
 
         # Two heads on our network
-        self.action_head = nn.Linear(in_features=16, out_features=self.action_size)
-        self.value_head = nn.Linear(in_features=16, out_features=1)
+        self.action_head = nn.Linear(in_features=self.size*3, out_features=self.action_size)
+        self.value_head = nn.Linear(in_features=self.size*3, out_features=1)
+
 
         self.to(device)
 
