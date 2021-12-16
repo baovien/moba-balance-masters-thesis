@@ -1,5 +1,7 @@
 import numpy as np
 import random
+import pickle
+
 
 class Dota2Game:
     """
@@ -11,7 +13,7 @@ class Dota2Game:
 
     def __init__(self):
         self.columns = 121
-        self.win = 10
+        self.picks = 10
 
     def get_init_board(self):
         b = np.zeros((self.columns,), dtype=np.int)
@@ -32,9 +34,18 @@ class Dota2Game:
         return (b, -player)
 
     def has_legal_moves(self, board):
-        for index in range(self.columns):
-            if board[index] == 0:
-                return True
+        count = 0
+
+        for col in board:
+            if col != 0:
+                count += 1
+
+        if count < self.picks:
+            return True
+
+        # for index in range(self.columns):
+        #     if board[index] == 0:
+        #         return True
         return False
 
     def get_valid_moves(self, board):
@@ -47,37 +58,47 @@ class Dota2Game:
 
         return valid_moves
 
-    def is_win(self, board, player):
+    def is_terminal(self, board):
         count = 0
         for index in range(self.columns):
             if board[index] !=0:
                 count += 1
 
-            # if board[index] == player:
-            #     count = count + 1
-            # else:
-            #     count = 0
-
-            if count == self.win:
+            if count == self.picks:
                 return True
 
         return False
 
-    def virtual_loss(self):
+    def virtual_loss(self, board):
+        
+
+
         return random.random()
 
     def get_reward_for_player(self, board, player):
-        # return None if not ended, 1 if player 1 wins, -1 if player 1 lost
-
-        if self.is_win(board, player):
-            return self.virtual_loss()
-        if self.is_win(board, -player):
-            return 1 - self.virtual_loss()
+        # return None if not ended 
+        # virtual loss if player 1 wins
+        # 1 - virtual loss if player 1 lost
+        
+        if self.is_terminal(board):
+            return self.virtual_loss(board)  
         if self.has_legal_moves(board):
             return None
 
     def get_canonical_board(self, board, player):
         return player * board
+
+    def encode_board(self, board):
+        t0 = [k for k, v in enumerate(board) if v == 1]
+        t1 = [k for k, v in enumerate(board) if v == -1]
+        
+        # find what positions the players have played 
+        
+
+
+    def _load_vl(self):
+        with open('vl_logreg_57.pkl', 'rb') as f:
+            self.model = pickle.load(f)
 
 
 
