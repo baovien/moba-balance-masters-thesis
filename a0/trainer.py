@@ -1,9 +1,11 @@
 import os
 import numpy as np
 from random import shuffle
-
+import uuid
 import torch
 import torch.optim as optim
+import pickle
+import tqdm
 
 from monte_carlo_tree_search import MCTS
 
@@ -13,6 +15,7 @@ class Trainer:
         self.game = game
         self.model = model
         self.args = args
+        self.run_id = str(uuid.uuid4())
         self.mcts = MCTS(self.game, self.model, self.args)
 
     def exceute_episode(self):
@@ -47,22 +50,24 @@ class Trainer:
                 return ret
 
     def learn(self):
-        for i in range(1, self.args['numIters'] + 1):
+        for i in tqdm.tqdm(range(1, self.args['numIters'] + 1), desc="Interation"):
 
-            print("{}/{}".format(i, self.args['numIters']))
 
             train_examples = []
 
-            for eps in range(self.args['numEps']):
+            for eps in tqdm.tqdm(range(self.args['numEps']), desc="Episode"):
                 iteration_train_examples = self.exceute_episode()
                 train_examples.extend(iteration_train_examples)
 
             shuffle(train_examples)
+            self._save_training_data(train_examples, i)
             self.train(train_examples)
             filename = self.args['checkpoint_path']
             self.save_checkpoint(folder=".", filename=filename)
 
-    def train(self, examples):
+
+
+    def train(self, examples):        
         optimizer = optim.Adam(self.model.parameters(), lr=5e-4)
         pi_losses = []
         v_losses = []
@@ -125,3 +130,16 @@ class Trainer:
         torch.save({
             'state_dict': self.model.state_dict(),
         }, filepath)
+
+
+    def _save_training_data(self, train_examples, it_num):
+        # TODO: save in folders named by runid, 
+
+        folder = self.args['training_data_path']
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+
+        filepath = os.path.join(folder, '{}_{}.pkl'.format(self.run_id, it_num))
+
+        with open(filepath, 'wb') as f:
+            pickle.dump(train_examples, f)

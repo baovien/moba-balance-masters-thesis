@@ -3,6 +3,8 @@ import random
 import pickle
 
 
+hero_coefs = np.random.uniform(low=-1, high=1, size=(121,))
+
 class Dota2Game:
     """
     A very, very simple game of ConnectX in which we have:
@@ -33,47 +35,21 @@ class Dota2Game:
         # change the perspective of the game with negative
         return (b, -player)
 
-    def has_legal_moves(self, board):
-        count = 0
-
-        for col in board:
-            if col != 0:
-                count += 1
-
-        if count < self.picks:
-            return True
-
-        # for index in range(self.columns):
-        #     if board[index] == 0:
-        #         return True
-        return False
-
     def get_valid_moves(self, board):
         # All moves are invalid by default
-        valid_moves = [0] * self.get_action_size()
-
-        for index in range(self.columns):
-            if board[index] == 0:
-                valid_moves[index] = 1
-
-        return valid_moves
+        return (board == 0).astype(np.int)
 
     def is_terminal(self, board):
-        count = 0
-        for index in range(self.columns):
-            if board[index] !=0:
-                count += 1
-
-            if count == self.picks:
-                return True
-
-        return False
+        return np.abs(board).sum() == 10
 
     def virtual_loss(self, board):
+        # TODO: investigate board negation vs player turn 
         
-
-
-        return random.random()
+        pred = hero_coefs.dot(board)
+        if pred > 0:
+            return 1 
+    
+        return -1
 
     def get_reward_for_player(self, board, player):
         # return None if not ended 
@@ -81,9 +57,12 @@ class Dota2Game:
         # 1 - virtual loss if player 1 lost
         
         if self.is_terminal(board):
-            return self.virtual_loss(board)  
-        if self.has_legal_moves(board):
-            return None
+            if player == 1:
+                return self.virtual_loss(board)
+            elif player == -1:
+                return -self.virtual_loss(board)
+
+        return None
 
     def get_canonical_board(self, board, player):
         return player * board
@@ -91,9 +70,10 @@ class Dota2Game:
     def encode_board(self, board):
         t0 = [k for k, v in enumerate(board) if v == 1]
         t1 = [k for k, v in enumerate(board) if v == -1]
-        
+        return t0, t1
         # find what positions the players have played 
-        
+    
+
 
 
     def _load_vl(self):

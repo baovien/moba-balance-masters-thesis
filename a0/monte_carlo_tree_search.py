@@ -104,8 +104,9 @@ class MCTS:
         # EXPAND root
         action_probs, value = model.predict(state)
         valid_moves = self.game.get_valid_moves(state)
+
         action_probs = action_probs * valid_moves  # mask invalid moves
-        action_probs /= np.sum(action_probs)
+        action_probs /= np.sum(action_probs) + 1e-10  # renormalize
         root.expand(state, to_play, action_probs)
 
         for _ in range(self.args['num_simulations']):
@@ -113,6 +114,7 @@ class MCTS:
             search_path = [node]
 
             # SELECT
+            # TODO: investigate ply count
             while node.expanded():
                 action, node = node.select_child()
                 search_path.append(node)
@@ -133,7 +135,7 @@ class MCTS:
                 action_probs, value = model.predict(next_state)
                 valid_moves = self.game.get_valid_moves(next_state)
                 action_probs = action_probs * valid_moves  # mask invalid moves
-                action_probs /= np.sum(action_probs)
+                action_probs /= np.sum(action_probs) + 1e-10  # renormalize
                 node.expand(next_state, parent.to_play * -1, action_probs)
 
             self.backpropagate(search_path, value, parent.to_play * -1)

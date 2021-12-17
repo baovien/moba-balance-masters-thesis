@@ -22,23 +22,28 @@ class Connect2Model(nn.Module):
         # self.action_head = nn.Linear(in_features=16, out_features=self.action_size)
         # self.value_head = nn.Linear(in_features=16, out_features=1)
 
-        self.fc1 = nn.Linear(in_features=self.size, out_features=self.size*3)
-        self.fc2 = nn.Linear(in_features=self.size*3, out_features=self.size*3)
+        self.hidden_dim = 200
+
+        self.embedding_net = nn.Sequential(
+          nn.Linear(self.size, self.hidden_dim),
+          nn.ReLU(),
+          nn.Linear(self.hidden_dim, self.hidden_dim ),
+          nn.ReLU()
+        )
 
         # Two heads on our network
-        self.action_head = nn.Linear(in_features=self.size*3, out_features=self.action_size)
-        self.value_head = nn.Linear(in_features=self.size*3, out_features=1)
-
+        self.action_head = nn.Linear(in_features=self.hidden_dim, out_features=self.action_size)
+        self.value_head = nn.Linear(in_features=self.hidden_dim, out_features=1)
 
         self.to(device)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
+        hidden = self.embedding_net(x)
 
-        action_logits = self.action_head(x)
-        value_logit = self.value_head(x)
+        action_logits = self.action_head(hidden)
+        value_logit = self.value_head(hidden)
 
+        # Return priors for next nodes and value of current node
         return F.softmax(action_logits, dim=1), torch.tanh(value_logit)
 
     def predict(self, board):
