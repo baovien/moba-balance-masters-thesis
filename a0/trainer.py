@@ -51,8 +51,6 @@ class Trainer:
 
     def learn(self):
         for i in tqdm.tqdm(range(1, self.args['numIters'] + 1), desc="Interation"):
-
-
             train_examples = []
 
             for eps in tqdm.tqdm(range(self.args['numEps']), desc="Episode"):
@@ -62,8 +60,9 @@ class Trainer:
             shuffle(train_examples)
             self._save_training_data(train_examples, i)
             self.train(train_examples)
-            filename = self.args['checkpoint_path']
-            self.save_checkpoint(folder=".", filename=filename)
+            folder = self.args['checkpoint_path']
+            filename = "checkpoint_iter_{}.pth".format(i)
+            self.save_checkpoint(folder=folder, filename=filename)
 
 
 

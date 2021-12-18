@@ -1,3 +1,4 @@
+from numpy.lib.function_base import place
 import torch
 import math
 import numpy as np
@@ -130,6 +131,7 @@ class MCTS:
             # The value of the new state from the perspective of the other player
             value = self.game.get_reward_for_player(next_state, player=1)
             if value is None:
+
                 # If the game has not ended:
                 # EXPAND
                 action_probs, value = model.predict(next_state)
@@ -139,7 +141,6 @@ class MCTS:
                 node.expand(next_state, parent.to_play * -1, action_probs)
 
             self.backpropagate(search_path, value, parent.to_play * -1)
-
         return root
 
     def backpropagate(self, search_path, value, to_play):

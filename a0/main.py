@@ -6,14 +6,16 @@ from trainer import Trainer
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+# add args for checpoints and that below
+
 args = {
     'batch_size': 64,
-    'numIters': 150, #500                                # Total number of training iterations
-    'num_simulations': 100,                         # Total number of MCTS simulations to run when deciding on a move to play
-    'numEps': 50,                                  # Number of full games (episodes) to run during each iteration
+    'numIters': 500, #500                                # Total number of training iterations
+    'num_simulations': 200,                         # Total number of MCTS simulations to run when deciding on a move to play
+    'numEps': 150,                                  # Number of full games (episodes) to run during each iteration
     'numItersForTrainExamplesHistory': 20,
     'epochs': 2,                                    # Number of epochs of training per iteration
-    'checkpoint_path': 'latest.pth',                # location to save latest set of weights
+    'checkpoint_path': 'checkpoints2/',                # location to save latest set of weights
     'training_data_path': 'training_data/',         # location to save training data
 }
 

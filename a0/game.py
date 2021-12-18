@@ -1,9 +1,9 @@
 import numpy as np
 import random
 import pickle
+from virtual_loss import VirtualLoss
 
-
-hero_coefs = np.random.uniform(low=-1, high=1, size=(121,))
+# hero_coefs = np.random.uniform(low=-1, high=1, size=(121,))
 
 class Dota2Game:
     """
@@ -16,6 +16,7 @@ class Dota2Game:
     def __init__(self):
         self.columns = 121
         self.picks = 10
+        self.vl = VirtualLoss()
 
     def get_init_board(self):
         b = np.zeros((self.columns,), dtype=np.int)
@@ -42,13 +43,16 @@ class Dota2Game:
     def is_terminal(self, board):
         return np.abs(board).sum() == 10
 
-    def virtual_loss(self, board):
+    def virtual_loss(self, board, player):
+        winner, probas = self.vl(board)
+
         # TODO: investigate board negation vs player turn 
         
-        pred = hero_coefs.dot(board)
-        if pred > 0:
+        if winner and player == 1:
             return 1 
-    
+        elif not winner and player == -1:
+            return 1
+
         return -1
 
     def get_reward_for_player(self, board, player):
@@ -57,10 +61,11 @@ class Dota2Game:
         # 1 - virtual loss if player 1 lost
         
         if self.is_terminal(board):
-            if player == 1:
-                return self.virtual_loss(board)
-            elif player == -1:
-                return -self.virtual_loss(board)
+            return self.virtual_loss(board, player)
+            # if player == 1:
+            #     return self.virtual_loss(board)
+            # elif player == -1:
+            #     return -self.virtual_loss(board)
 
         return None
 
@@ -76,9 +81,6 @@ class Dota2Game:
 
 
 
-    def _load_vl(self):
-        with open('vl_logreg_57.pkl', 'rb') as f:
-            self.model = pickle.load(f)
 
 
 

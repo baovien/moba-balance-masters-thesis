@@ -1,3 +1,5 @@
+a0/training_data/
+a0/checkpoint*
 data/vl_train_data_full.zip
 data/vl_train_data_full/
 data/raw
