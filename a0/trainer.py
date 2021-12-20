@@ -61,7 +61,7 @@ class Trainer:
             self._save_training_data(train_examples, i)
             self.train(train_examples)
             folder = self.args['checkpoint_path']
-            filename = "checkpoint_iter_{}.pth".format(i)
+            filename = "checkpoint_{}.pth".format(i)
             self.save_checkpoint(folder=folder, filename=filename)
 
 

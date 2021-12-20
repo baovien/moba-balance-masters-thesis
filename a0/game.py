@@ -2,8 +2,32 @@ import numpy as np
 import random
 import pickle
 from virtual_loss import VirtualLoss
+from enum import Enum
 
-# hero_coefs = np.random.uniform(low=-1, high=1, size=(121,))
+
+class Move(Enum):
+    PICK = 0
+    BAN = 1
+
+
+drafting_rules = {
+    'school_yard': [Move.PICK] * 10 ,
+    'captains': [Move.BAN] * 4 + [Move.PICK] * 4 + [Move.BAN] * 6 + [Move.PICK] * 4 + [Move.BAN] * 4 + [Move.PICK] * 2, 
+}
+
+class GameState: 
+    def __init__(self):
+        self.board = np.zeros(121)
+        self.bans = np.ones(121)
+        self.first_pick = 1
+        self.radiant_player = 1
+
+    def get_legal_moves_for_picks(self):
+        return (self.board == 1).astype(int) * self.bans
+        
+
+# First pick, last pick, side
+
 
 class Dota2Game:
     """
@@ -13,8 +37,10 @@ class Dota2Game:
         winNumber: 2
     """
 
-    def __init__(self):
+    def __init__(self, draft_type):
         self.columns = 121
+        self.move_number = 0
+        self.moves = drafting_rules[draft_type]
         self.picks = 10
         self.vl = VirtualLoss()
 
@@ -37,7 +63,7 @@ class Dota2Game:
         return (b, -player)
 
     def get_valid_moves(self, board):
-        # All moves are invalid by default
+        # All moves are valid by default
         return (board == 0).astype(np.int)
 
     def is_terminal(self, board):
@@ -78,14 +104,6 @@ class Dota2Game:
         return t0, t1
         # find what positions the players have played 
     
-
-
-
-
-
-
-
-
 class Connect2Game:
     """
     A very, very simple game of ConnectX in which we have:

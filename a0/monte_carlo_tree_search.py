@@ -2,7 +2,7 @@ from numpy.lib.function_base import place
 import torch
 import math
 import numpy as np
-
+import random
 
 def ucb_score(parent, child):
     """
@@ -19,14 +19,14 @@ def ucb_score(parent, child):
 
 
 class Node:
-    def __init__(self, prior, to_play):
+    def __init__(self, prior, to_play, epsilon_greedy=None):
         self.visit_count = 0        # Number of times this node has been visited during MCTS. "Good" are visited more than "bad" states.
         self.to_play = to_play      # The player whose turn it is to play (1 or -1)
         self.prior = prior          # The prior prob of selecting this state from its parent
         self.value_sum = 0          # The total value of this state from all visits
         self.children = {}          # A lookup of legal child positions
         self.state = None           # The board state at this node
-
+        self.epsilon_greedy = epsilon_greedy
     def expanded(self):
         return len(self.children) > 0
 
@@ -56,15 +56,29 @@ class Node:
 
         return action
 
+    def _select_child_random(self):
+        """
+        Select random child greedy.
+        """
+        action = random.choice(list(self.children.keys()))
+        return action, self.children[action]
+
+
     def select_child(self):
         """
         Select the child with the highest UCB score.
         """
+        if self.epsilon_greedy is not None:
+            r = random.random()
+            if r < self.epsilon_greedy:
+                return self._select_child_random()
+
         best_score = -np.inf
         best_action = -1
         best_child = None
 
         for action, child in self.children.items():
+            
             score = ucb_score(self, child)
             if score > best_score:
                 best_score = score
@@ -81,7 +95,7 @@ class Node:
         self.state = state
         for a, prob in enumerate(action_probs):
             if prob != 0:
-                self.children[a] = Node(prior=prob, to_play=self.to_play * -1)
+                self.children[a] = Node(prior=prob, to_play=self.to_play * -1, epsilon_greedy=self.epsilon_greedy)
 
     def __repr__(self):
         """
@@ -93,14 +107,15 @@ class Node:
 
 class MCTS:
 
-    def __init__(self, game, model, args):
+    def __init__(self, game, model, args, epsilon_greedy=None):
         self.game = game
         self.model = model
+        self.epsilon_greedy = epsilon_greedy
         self.args = args
 
     def run(self, model, state, to_play):
-
-        root = Node(0, to_play)
+        # TODO: implement time for test
+        root = Node(0, to_play, self.epsilon_greedy)
 
         # EXPAND root
         action_probs, value = model.predict(state)

@@ -2,6 +2,7 @@ import os
 import json
 import numpy as np
 import pickle
+import warnings
 class VirtualLoss:
     def __init__(self):
         self.hero_pos_dist = self._load_hero_pos()
@@ -47,8 +48,10 @@ class VirtualLoss:
         return self.model.predict(enc.reshape(1, -1))[0], self.model.predict_proba(enc.reshape(1, -1))[0]
 
     def _load_model(self):
-        with open('data/vl_logreg_57.pkl', 'rb') as f:
-            return pickle.load(f)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            with open('data/vl_logreg_57.pkl', 'rb') as f:
+                return pickle.load(f)
 
 
     def _encode_board(self, board):
@@ -62,7 +65,7 @@ class VirtualLoss:
         for k, i in enumerate(teams_concat):
             hero_pos = teams_pos_concat[k]
             if k > 4:
-                draft_encoded_pos[i*5+hero_pos] = -1
+                draft_encoded_pos[i*5 + hero_pos] = -1
             else: 
                 draft_encoded_pos[i*5 + hero_pos] = 1
         
@@ -83,7 +86,6 @@ class VirtualLoss:
 
     def _load_hero_pos(self):
         assert os.path.isfile('data/hero_roles.npy')
-    
         hero_roles = np.load('data/hero_roles.npy')
         
         z = hero_roles.sum(axis=1)
