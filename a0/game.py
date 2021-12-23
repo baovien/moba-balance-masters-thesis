@@ -30,13 +30,6 @@ class GameState:
 
 
 class Dota2Game:
-    """
-    A very, very simple game of ConnectX in which we have:
-        rows: 1
-        columns: 4
-        winNumber: 2
-    """
-
     def __init__(self, draft_type):
         self.columns = 121
         self.move_number = 0

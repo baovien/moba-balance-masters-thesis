@@ -11,12 +11,13 @@ from monte_carlo_tree_search import MCTS
 
 class Trainer:
 
-    def __init__(self, game, model, args):
+    def __init__(self, game, model, args, epsilon_greedy=None):
         self.game = game
         self.model = model
         self.args = args
+        self.epsilon_greedy = epsilon_greedy
         self.run_id = str(uuid.uuid4())
-        self.mcts = MCTS(self.game, self.model, self.args)
+        # self.mcts = MCTS(self.game, self.model, self.args, self.epsilon_greedy)
 
     def exceute_episode(self):
 
@@ -27,8 +28,8 @@ class Trainer:
         while True:
             canonical_board = self.game.get_canonical_board(state, current_player)
 
-            self.mcts = MCTS(self.game, self.model, self.args)
-            root = self.mcts.run(self.model, canonical_board, to_play=1)
+            mcts = MCTS(self.game, self.model, self.args, self.epsilon_greedy)
+            root = mcts.run(self.model, canonical_board, to_play=1)
 
             action_probs = [0 for _ in range(self.game.get_action_size())]
             for k, v in root.children.items():
@@ -53,6 +54,8 @@ class Trainer:
         for i in tqdm.tqdm(range(1, self.args['numIters'] + 1), desc="Interation"):
             train_examples = []
 
+
+            # generate training examples
             for eps in tqdm.tqdm(range(self.args['numEps']), desc="Episode"):
                 iteration_train_examples = self.exceute_episode()
                 train_examples.extend(iteration_train_examples)

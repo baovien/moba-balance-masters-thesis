@@ -14,6 +14,9 @@ class RandomModel():
         self.size = board_size
         self.action_size = action_size
 
+    def __repr__(self) -> str:
+        return "RandomModel"
+
     def forward(self, x):
         action_logits = torch.randn(1, self.action_size, device=self.device)
         value_logit = torch.randn(1, device=self.device)
@@ -58,6 +61,9 @@ class DotaDraftModel(nn.Module):
         self.value_head = nn.Linear(in_features=self.hidden_dim, out_features=1)
 
         self.to(device)
+
+    def __repr__(self):
+        return "DotaDraftModel"
 
     def forward(self, x):
         hidden = self.embedding_net(x)

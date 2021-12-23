@@ -1,9 +1,10 @@
 import torch
 
-from game import Connect2Game, Dota2Game
-from model import DotaDraftModel, BanPickModel
+from game import Dota2Game
+from model import DotaDraftModel
 from trainer import Trainer
-import argparse
+import glob
+import pickle
 
 if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -17,7 +18,7 @@ if __name__ == "__main__":
         'numEps': 500,                                  # Number of full games (episodes) to run during each iteration
         'numItersForTrainExamplesHistory': 20,          # Maximum number of 'iterations' that game episodes are kept in queue. After that last is popped and new one is added.
         'epochs': 10,                                   # Number of epochs of training per iteration
-        'checkpoint_path': 'alpha7/',                   # location to save latest set of weights
+        'checkpoint_path': 'alpha8/',                   # location to save latest set of weights
         'training_data_path': 'training_data/',         # location to save training data
         'draft_type': 'school_yard',
     }
@@ -28,5 +29,23 @@ if __name__ == "__main__":
 
     model = DotaDraftModel(board_size, action_size, device)
 
-    trainer = Trainer(game, model, args, epsilon_greedy=0.7)
-    trainer.learn()
+    print("args:", args)
+
+
+    training_examples = []
+
+    # read training example pkl and extend training_examples
+    for file in glob.glob(args['training_data_path'] + '*.pkl'):
+        with open(file, 'rb') as f:
+            training_examples.extend(pickle.load(f))
+
+    print('training examples:', len(training_examples))
+
+    trainer = Trainer(game, model, args, epsilon_greedy=0.5)
+    trainer.train(training_examples)
+    folder = args['checkpoint_path']
+    filename = "alpha8.pth"
+    trainer.save_checkpoint(folder=folder, filename=filename)
+
+    print("save checkpoint to:", folder + filename)
+    print("done!")
