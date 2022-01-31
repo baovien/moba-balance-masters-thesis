@@ -4,9 +4,11 @@
 ## Folder structure
 ```
 📦dota-masters-thesis
- ┣ 📂data           (project data)
- ┣ 📂notebooks      (prototyping/poc)
- ┣ 📂old            (legacy code)
- ┗ 📂scraper        (dota2 scraper)
+ ┣ 📂data               (project data)
+ ┣ 📂drafter            (self-play drafter)
+ ┣ 📂notebooks          (prototyping/poc)
+ ┣ 📂old                (legacy code)
+ ┣ 📂position_optimizer (dota2 pos. optim.)
+ ┗ 📂scraper            (dota2 scraper)
 ```
 
