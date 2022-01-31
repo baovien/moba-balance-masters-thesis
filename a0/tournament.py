@@ -33,7 +33,7 @@ def play_game(game, models, args):
     state = game.get_init_board()
 
     while True:
-
+        print(current_player)
         canonical_board = game.get_canonical_board(state, current_player)
 
         mcts = MCTS(game, models[current_player], args, epsilon_greedy=0.8)
@@ -63,9 +63,9 @@ if __name__ == "__main__":
     # In this implementation, player 1 picks first, and player 2 picks last
     args = {
 
-        'num_simulations': 20,         # Total number of MCTS simulations to run when deciding on a move to play
-        'num_games': 100,
-        'num_iterations': 5,
+        'num_simulations': 1,         # Total number of MCTS simulations to run when deciding on a move to play
+        'num_games': 1,
+        'num_iterations': 1,
         'first_pick': 1,                # 1: player 1, -1: player 2 # Do not change this. Change models dict instead
         'draft_type': 'school_yard'
     }
@@ -74,18 +74,20 @@ if __name__ == "__main__":
     game = Dota2Game(draft_type=args["draft_type"])
     
     # experiment: two trained models
-    player_1_model = load_model('selected_models/alpha4.pth', game, device)
-    player_2_model = load_model('selected_models/alpha5.pth', game, device)
+    # player_1_model = load_model('selected_models/alpha4.pth', game, device)
+    # player_2_model = load_model('selected_models/alpha5.pth', game, device)
 
     # models = {
-    #     1: load_model('random', game, device),
-    #     -1: load_model('random', game, device),
+    #     1: player_1_model,
+    #     -1: player_2_model
     # }
 
+
     models = {
-        1: player_1_model,
-        -1: player_2_model
+        1: load_model('random', game, device),
+        -1: load_model('random', game, device),
     }
+
 
     print("=" * 20 + " args " + "=" * 20)
     pprint(args)

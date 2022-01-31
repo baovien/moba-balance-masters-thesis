@@ -48,6 +48,7 @@ class Dota2Game:
         return self.columns
 
     def get_next_state(self, board, player, action):
+        
         b = np.copy(board)
         b[action] = player
 
@@ -125,6 +126,7 @@ class Connect2Game:
 
         # Return the new game, but
         # change the perspective of the game with negative
+        # print(b)
         return (b, -player)
 
     def has_legal_moves(self, board):
