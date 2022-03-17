@@ -1,4 +1,5 @@
-# Masters Thesis - Lost in Draft: Investigating Game Balance in Multiplayer Online Battle Arena Drafting
+### Master's Thesis
+# Lost in Draft: Investigating Game Balance in Multiplayer Online Battle Arena Drafting
 
 ## Abstract
 The thesis explores modern machine learning solutions to turn-based strategy games. In particular, we explore the possibilities of equalizing the playing field for both teams in the draft phase of Defense of the Ancients 2 (Dota 2) and League of Legends (LoL), with both games being giants in the multi-million dollar esports industry.
