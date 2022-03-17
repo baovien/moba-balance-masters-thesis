@@ -1,22 +1,23 @@
 a0/training_data/
 a0/checkpoint*
-data/vl_train_data_full.zip
-data/vl_train_data_full/
+
 data/raw
+data/big*
+data/vl_train_data_*
 data/dota_games.zip
 data/game_features.npz
-data/big*
 data/virtual_loss_training_data
-data/raw
+
 old/data/
-.env
-.ipynb_checkpoints
-.vscode/
+
 position_optimizer/data/parsed/*
 position_optimizer/data/opendota_parsed_matches.tar.gz
 position_optimizer/data/open_dota_matches/*
 position_optimizer/data/dataset_positions*.pkl
 
+.env
+.ipynb_checkpoints
+.vscode/
 # Created by .ignore support plugin (hsz.mobi)
 ### Python template
 # Byte-compiled / optimized / DLL files
